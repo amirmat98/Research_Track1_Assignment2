@@ -58,12 +58,15 @@ find_package(catkin REQUIRED COMPONENTS
   add_message_files(
     FILES 
     TargetPosition.msg
+    RobotPositionVelocity.msg
+    Abort.msg
 )
 
 ## Generate services in the 'srv' folder
   add_service_files(
     FILES
     LastTarget.srv
+    RobotToTarget.srv
 )
 
 ## Generate actions in the 'action' folder
@@ -167,10 +170,12 @@ include_directories(
 
 ## Mark executable scripts (Python etc.) for installation
 ## in contrast to setup.py, you can choose the destination
-# catkin_install_python(PROGRAMS
-#   scripts/my_python_script
-#   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
-# )
+catkin_install_python(PROGRAMS
+   scripts/DefineTargetService.py
+   scripts/TargetDistanceService.py
+   scripts/TargetPositionService.py
+   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+ )
 
 ## Mark executables for installation
 ## See http://docs.ros.org/melodic/api/catkin/html/howto/format1/building_executables.html
