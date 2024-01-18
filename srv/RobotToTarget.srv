@@ -1,0 +1,6 @@
+---
+float32 d_x
+float32 d_y
+float32 distance
+float32 average_v_x
+float32 average_v_y
