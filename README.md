@@ -12,7 +12,7 @@ Student: [AmirMahdi Matin](https://github.com/amirmat98 "AmirMahdi Matin")  - 58
 - [Documentation](#Documentation)
     - [Instalation](#Instalation)
     - [Structure](#Structure)
-- [Explanation](#Explanation-(including-pseudocode))
+- [Explanation (including pseudocode)](#Explanation-(including-pseudocode))
     - [First Node](#First-Node-(DefineTargetService))
     - [Second Node](#Second-Node-(TargetPositionService))
     - [Third Node](#Third-Node-(TargetDistanceService))
