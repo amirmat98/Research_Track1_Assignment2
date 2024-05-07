@@ -1,8 +1,26 @@
 #!/usr/bin/env python3
 
 """
-Programmer: AmirMahdi Matin - s5884715
+.. module:: action_client
+   :platform: Unix
+   :synopsis: action_client node for the RT1_Second_Assignment project
 
+.. moduleauthor:: Amirmahdi Matin
+
+Python node that implements an action client that communicates with the
+provided action server to move the robot towards a user-defined point.
+To this purpose, the bug_0 algorithm was implemented.
+
+Subscribers:
+    /pos_and_vel -> custom message to obtain and print the robot position, linear velocity along x-axis and angular velocity around z-axis
+
+
+Publishers:
+   /odom -> robot's current position, velocity and other odometry data
+   /reaching_goal/result -> robot's current status
+
+Action client topic:
+   /reaching_goal -> used to communicate with the action server "bug_as"
 """
 
 import rospy
@@ -25,11 +43,14 @@ global temp_status
 global have_goal
 global goal_reached
 
-"""
-publish_message(msg) is a function that publishes a custom message that retrieves the value of the robot
-on the topic /odom.
-"""
+
 def publish_message(msg):
+    """
+    This function publishes the custom-defined message *pos_and_vel*
+
+    Args:
+    msg(Odometry): the robot's position and vellocity
+    """
     # get the current position of the robot from the msg in the topic /odom.
     position = msg.pose.pose.position
     linear_velocity = msg.twist.twist.linear
@@ -45,6 +66,8 @@ def publish_message(msg):
     publisher.publish(pos_vel)
 
 def idle():
+    """ First status of the dictionary used to implement a switch-case structure in the *robot_status()* function
+    """
     rospy.loginfo("Idle")
     # get the current goal from the parameters in the launch file
     x_t = rospy.get_param('/des_pos_x')
@@ -64,6 +87,8 @@ def idle():
     have_goal = 1
 
 def going_to_goal():
+    """ Second status of the dictionary used to implement a switch-case structure in the *robot_status()* function
+    """
     rospy.loginfo("Going to goal")
     display_command()
     # ask the user for the command
@@ -104,6 +129,8 @@ def change_goal():
     rospy.loginfo("Change goal")
 
 def default():
+    """ Default status of the dictionary used to implement a switch-case structure in the *robot_status()* function. It corresponds to an error case.
+    """
     rospy.loginfo("Default")
 
 
@@ -119,6 +146,9 @@ def switch_status(case):
 
 
 def robot_status():
+    """
+    This function manages all the robot's actions in the main
+    """
     temp_status = 0
     rospy.loginfo("Robot status is idle")
     
