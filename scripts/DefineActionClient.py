@@ -1,26 +1,27 @@
 #!/usr/bin/env python3
 
 """
-.. module:: action_client
+.. module:: DefineActionClient
    :platform: Unix
-   :synopsis: action_client node for the RT1_Second_Assignment project
+   :synopsis: DefineActionClient node for the RT1_Second_Assignment project
 
 .. moduleauthor:: Amirmahdi Matin
 
-Python node that implements an action client that communicates with the
-provided action server to move the robot towards a user-defined point.
-To this purpose, the bug_0 algorithm was implemented.
+Implementing a Python node that executes an action client, which coordinates the movement of the automaton towards a point specified by the user.
+The bug_0 algorithm was built with this objective in mind.
+
 
 Subscribers:
-    /pos_and_vel -> custom message to obtain and print the robot position, linear velocity along x-axis and angular velocity around z-axis
+    /pos_and_vel -> The position, linear velocity along the x-axis, and angular velocity about the z-axis of the automaton are obtained and printed via a custom message.
+
 
 
 Publishers:
-   /odom -> robot's current position, velocity and other odometry data
-   /reaching_goal/result -> robot's current status
+   /odom -> current position, velocity, and additional odometry data of the robot
+   /reaching_goal/result -> Present state of the robot
 
 Action client topic:
-   /reaching_goal -> used to communicate with the action server "bug_as"
+   /reaching_goal -> employed to establish communication with the "bug_as" action server.
 """
 
 import rospy
@@ -30,7 +31,7 @@ import actionlib
 import actionlib.msg
 from rt1_a2_2023.msg import PlanningAction, PlanningGoal
 from rt1_a2_2023.msg import TargetPosition, Abort, RobotPositionVelocity
-import time
+import timgeometry_msgs.e
 import sys
 import select
 import os
@@ -46,10 +47,10 @@ global goal_reached
 
 def publish_message(msg):
     """
-    This function publishes the custom-defined message *pos_and_vel*
+    This function outputs the message *pos_and_vel*, which is custom-defined.
 
     Args:
-    msg(Odometry): the robot's position and vellocity
+    msg(Odometry): the velocity and position of the robot
     """
     # get the current position of the robot from the msg in the topic /odom.
     position = msg.pose.pose.position
@@ -147,7 +148,7 @@ def switch_status(case):
 
 def robot_status():
     """
-    This function manages all the robot's actions in the main
+    This function controls every action performed by the primary robot.
     """
     temp_status = 0
     rospy.loginfo("Robot status is idle")
@@ -175,16 +176,25 @@ if __name__ == '__main__':
         # Initialize the publisher
         global publisher
         publisher = rospy.Publisher("/RobotPositionVelocity", RobotPositionVelocity, queue_size=1)
+        """ 
+        The message publisher is responsible for generating the position and velocity of the robot along designated axes.
+	    """
 
         # Initialize the subscriber
         global subscriber
         subscriber = rospy.Subscriber("/odom", Odometry, publish_message)
+        """
+        Odometry subscriber for the robot's position and velocity.
+        """
 
         # Initialize the action client
         global action_client
         action_client = actionlib.SimpleActionClient('/reaching_goal', rt1_a2_2023.msg.PlanningAction)
         action_client.wait_for_server()
         rospy.loginfo("Action client initialized successfully")
+        """
+        Action client initialing
+        """
     
         # Call the robot status function
         robot_status()
