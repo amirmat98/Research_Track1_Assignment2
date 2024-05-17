@@ -1,9 +1,29 @@
 #!/usr/bin/env python3
 
 """
-Programmer: AmirMahdi Matin - s5884715
+.. module:: DefineActionClient
+   :platform: Unix
+   :synopsis: DefineActionClient node for the RT1_Second_Assignment project
 
+.. moduleauthor:: Amirmahdi Matin
+
+Implementing a Python node that executes an action client, which coordinates the movement of the automaton towards a point specified by the user.
+The bug_0 algorithm was built with this objective in mind.
+
+
+Subscribers:
+    /pos_and_vel -> The position, linear velocity along the x-axis, and angular velocity about the z-axis of the automaton are obtained and printed via a custom message.
+
+
+
+Publishers:
+   /odom -> current position, velocity, and additional odometry data of the robot
+   /reaching_goal/result -> Present state of the robot
+
+Action client topic:
+   /reaching_goal -> employed to establish communication with the "bug_as" action server.
 """
+
 
 import rospy
 from geometry_msgs.msg import Point, Pose, Twist
@@ -12,7 +32,7 @@ import actionlib
 import actionlib.msg
 from rt1_a2_2023.msg import PlanningAction, PlanningGoal
 from rt1_a2_2023.msg import TargetPosition, Abort, RobotPositionVelocity
-import time
+import timgeometry_msgs.e
 import sys
 import select
 import os
@@ -20,16 +40,20 @@ from std_srvs.srv import *
 from rt1_a2_2023.srv import LastTarget, RobotToTarget
 
 
+
 # global variables
 global temp_status
 global have_goal
 global goal_reached
 
-"""
-publish_message(msg) is a function that publishes a custom message that retrieves the value of the robot
-on the topic /odom.
-"""
+
 def publish_message(msg):
+    """
+    This function outputs the message *pos_and_vel*, which is custom-defined.
+
+    Args:
+    msg(Odometry): the velocity and position of the robot
+    """
     # get the current position of the robot from the msg in the topic /odom.
     position = msg.pose.pose.position
     linear_velocity = msg.twist.twist.linear
@@ -45,6 +69,8 @@ def publish_message(msg):
     publisher.publish(pos_vel)
 
 def idle():
+    """ First status of the dictionary used to implement a switch-case structure in the *robot_status()* function
+    """
     rospy.loginfo("Idle")
     # get the current goal from the parameters in the launch file
     x_t = rospy.get_param('/des_pos_x')
@@ -64,6 +90,8 @@ def idle():
     have_goal = 1
 
 def going_to_goal():
+    """ Second status of the dictionary used to implement a switch-case structure in the *robot_status()* function
+    """
     rospy.loginfo("Going to goal")
     display_command()
     # ask the user for the command
@@ -104,6 +132,8 @@ def change_goal():
     rospy.loginfo("Change goal")
 
 def default():
+    """ Default status of the dictionary used to implement a switch-case structure in the *robot_status()* function. It corresponds to an error case.
+    """
     rospy.loginfo("Default")
 
 
@@ -119,6 +149,9 @@ def switch_status(case):
 
 
 def robot_status():
+    """
+    This function controls every action performed by the primary robot.
+    """
     temp_status = 0
     rospy.loginfo("Robot status is idle")
     
@@ -145,16 +178,25 @@ if __name__ == '__main__':
         # Initialize the publisher
         global publisher
         publisher = rospy.Publisher("/RobotPositionVelocity", RobotPositionVelocity, queue_size=1)
+        """ 
+        The message publisher is responsible for generating the position and velocity of the robot along designated axes.
+	    """
 
         # Initialize the subscriber
         global subscriber
         subscriber = rospy.Subscriber("/odom", Odometry, publish_message)
+        """
+        Odometry subscriber for the robot's position and velocity.
+        """
 
         # Initialize the action client
         global action_client
         action_client = actionlib.SimpleActionClient('/reaching_goal', rt1_a2_2023.msg.PlanningAction)
         action_client.wait_for_server()
         rospy.loginfo("Action client initialized successfully")
+        """
+        Action client initialing
+        """
     
         # Call the robot status function
         robot_status()

@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>scripts.DefineActionClient &mdash; Research_Track1_Assignment2 1.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=19f00094" />
+      <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css?v=fd3f3429" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="../../_static/jquery.js?v=5d32c60e"></script>
+        <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script src="../../_static/documentation_options.js?v=f2a433a1"></script>
+        <script src="../../_static/doctools.js?v=9a2dae69"></script>
+        <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            Research_Track1_Assignment2
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <!-- Local TOC -->
+              <div class="local-toc"></div>
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">Research_Track1_Assignment2</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">scripts.DefineActionClient</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for scripts.DefineActionClient</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/bin/env python3</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">.. module:: DefineActionClient</span>
+<span class="sd">   :platform: Unix</span>
+<span class="sd">   :synopsis: DefineActionClient node for the RT1_Second_Assignment project</span>
+
+<span class="sd">.. moduleauthor:: Amirmahdi Matin</span>
+
+<span class="sd">Implementing a Python node that executes an action client, which coordinates the movement of the automaton towards a point specified by the user.</span>
+<span class="sd">The bug_0 algorithm was built with this objective in mind.</span>
+
+
+<span class="sd">Subscribers:</span>
+<span class="sd">    /pos_and_vel -&gt; The position, linear velocity along the x-axis, and angular velocity about the z-axis of the automaton are obtained and printed via a custom message.</span>
+
+
+
+<span class="sd">Publishers:</span>
+<span class="sd">   /odom -&gt; current position, velocity, and additional odometry data of the robot</span>
+<span class="sd">   /reaching_goal/result -&gt; Present state of the robot</span>
+
+<span class="sd">Action client topic:</span>
+<span class="sd">   /reaching_goal -&gt; employed to establish communication with the &quot;bug_as&quot; action server.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">import rospy</span>
+<span class="sd">from geometry_msgs.msg import Point, Pose, Twist</span>
+<span class="sd">from nav_msgs.msg import Odometry</span>
+<span class="sd">import actionlib</span>
+<span class="sd">import actionlib.msg</span>
+<span class="sd">from rt1_a2_2023.msg import PlanningAction, PlanningGoal</span>
+<span class="sd">from rt1_a2_2023.msg import TargetPosition, Abort, RobotPositionVelocity</span>
+<span class="sd">import timgeometry_msgs.e</span>
+<span class="sd">import sys</span>
+<span class="sd">import select</span>
+<span class="sd">import os</span>
+<span class="sd">from std_srvs.srv import *</span>
+<span class="sd">from rt1_a2_2023.srv import LastTarget, RobotToTarget</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+
+<span class="c1"># global variables</span>
+<span class="k">global</span> <span class="n">temp_status</span>
+<span class="k">global</span> <span class="n">have_goal</span>
+<span class="k">global</span> <span class="n">goal_reached</span>
+
+
+<div class="viewcode-block" id="publish_message">
+<a class="viewcode-back" href="../../index.html#scripts.DefineActionClient.publish_message">[docs]</a>
+<span class="k">def</span> <span class="nf">publish_message</span><span class="p">(</span><span class="n">msg</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    This function outputs the message *pos_and_vel*, which is custom-defined.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">    msg(Odometry): the velocity and position of the robot</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># get the current position of the robot from the msg in the topic /odom.</span>
+    <span class="n">position</span> <span class="o">=</span> <span class="n">msg</span><span class="o">.</span><span class="n">pose</span><span class="o">.</span><span class="n">pose</span><span class="o">.</span><span class="n">position</span>
+    <span class="n">linear_velocity</span> <span class="o">=</span> <span class="n">msg</span><span class="o">.</span><span class="n">twist</span><span class="o">.</span><span class="n">twist</span><span class="o">.</span><span class="n">linear</span>
+
+    <span class="c1">#define the message that will be published</span>
+    <span class="n">pos_vel</span> <span class="o">=</span> <span class="n">RobotPositionVelocity</span><span class="p">()</span>
+    <span class="n">pos_vel</span><span class="o">.</span><span class="n">x</span> <span class="o">=</span> <span class="n">position</span><span class="o">.</span><span class="n">x</span>
+    <span class="n">pos_vel</span><span class="o">.</span><span class="n">y</span> <span class="o">=</span> <span class="n">position</span><span class="o">.</span><span class="n">y</span>
+    <span class="n">pos_vel</span><span class="o">.</span><span class="n">v_x</span> <span class="o">=</span> <span class="n">linear_velocity</span><span class="o">.</span><span class="n">x</span>
+    <span class="n">pos_vel</span><span class="o">.</span><span class="n">v_y</span> <span class="o">=</span> <span class="n">linear_velocity</span><span class="o">.</span><span class="n">y</span>
+
+    <span class="c1"># publish the message</span>
+    <span class="n">publisher</span><span class="o">.</span><span class="n">publish</span><span class="p">(</span><span class="n">pos_vel</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="idle">
+<a class="viewcode-back" href="../../index.html#scripts.DefineActionClient.idle">[docs]</a>
+<span class="k">def</span> <span class="nf">idle</span><span class="p">():</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot; First status of the dictionary used to implement a switch-case structure in the *robot_status()* function</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">rospy</span><span class="o">.</span><span class="n">loginfo</span><span class="p">(</span><span class="s2">&quot;Idle&quot;</span><span class="p">)</span>
+    <span class="c1"># get the current goal from the parameters in the launch file</span>
+    <span class="n">x_t</span> <span class="o">=</span> <span class="n">rospy</span><span class="o">.</span><span class="n">get_param</span><span class="p">(</span><span class="s1">&#39;/des_pos_x&#39;</span><span class="p">)</span>
+    <span class="n">y_t</span> <span class="o">=</span> <span class="n">rospy</span><span class="o">.</span><span class="n">get_param</span><span class="p">(</span><span class="s1">&#39;/des_pos_y&#39;</span><span class="p">)</span>
+
+    <span class="n">rospy</span><span class="o">.</span><span class="n">loginfo</span><span class="p">(</span><span class="s2">&quot;Current goal is: x = </span><span class="si">%f</span><span class="s2">, y = </span><span class="si">%f</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">x_t</span><span class="p">,</span> <span class="n">y_t</span><span class="p">)</span>
+
+    <span class="c1">#define the new goal based on the default goal that is defined in the launch file</span>
+    <span class="n">goal_new</span> <span class="o">=</span> <span class="n">rt1_a2_2023</span><span class="o">.</span><span class="n">msg</span><span class="o">.</span><span class="n">PlanningGoal</span><span class="p">()</span>
+    <span class="n">goal_new</span><span class="o">.</span><span class="n">target_pose</span><span class="o">.</span><span class="n">pose</span><span class="o">.</span><span class="n">position</span><span class="o">.</span><span class="n">x</span> <span class="o">=</span> <span class="n">x_t</span>
+    <span class="n">goal_new</span><span class="o">.</span><span class="n">target_pose</span><span class="o">.</span><span class="n">pose</span><span class="o">.</span><span class="n">position</span><span class="o">.</span><span class="n">y</span> <span class="o">=</span> <span class="n">y_t</span>
+
+    <span class="c1"># send the new goal to the action server</span>
+    <span class="n">action_client</span><span class="o">.</span><span class="n">send_goal</span><span class="p">(</span><span class="n">goal_new</span><span class="p">)</span>
+    <span class="c1"># change the status</span>
+    <span class="n">temp_status</span> <span class="o">=</span> <span class="mi">1</span>
+    <span class="n">have_goal</span> <span class="o">=</span> <span class="mi">1</span></div>
+
+
+<div class="viewcode-block" id="going_to_goal">
+<a class="viewcode-back" href="../../index.html#scripts.DefineActionClient.going_to_goal">[docs]</a>
+<span class="k">def</span> <span class="nf">going_to_goal</span><span class="p">():</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot; Second status of the dictionary used to implement a switch-case structure in the *robot_status()* function</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">rospy</span><span class="o">.</span><span class="n">loginfo</span><span class="p">(</span><span class="s2">&quot;Going to goal&quot;</span><span class="p">)</span>
+    <span class="n">display_command</span><span class="p">()</span>
+    <span class="c1"># ask the user for the command</span>
+    <span class="n">input_command</span> <span class="o">=</span> <span class="nb">input</span><span class="p">(</span><span class="s2">&quot;which command? </span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">input_command</span> <span class="o">==</span> <span class="s1">&#39;c&#39;</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">have_goal</span><span class="p">:</span>
+            <span class="c1"># cancel the goal first</span>
+            <span class="n">have_goal</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="n">action_client</span><span class="o">.</span><span class="n">cancel_goal</span><span class="p">()</span>
+            <span class="n">rospy</span><span class="o">.</span><span class="n">loginfo</span><span class="p">(</span><span class="s2">&quot;Goal canceled&quot;</span><span class="p">)</span>
+            <span class="c1"># get the new goal from the client</span>
+            <span class="n">input_x</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="nb">input</span><span class="p">(</span><span class="s2">&quot;enter the x coordinate: &quot;</span><span class="p">))</span>
+            <span class="n">input_y</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="nb">input</span><span class="p">(</span><span class="s2">&quot;enter the y coordinate: &quot;</span><span class="p">))</span>
+            <span class="c1"># change the goal and send it to the action server</span>
+            <span class="n">rospy</span><span class="o">.</span><span class="n">loginfo</span><span class="p">(</span><span class="s2">&quot;New goal is: x = </span><span class="si">%f</span><span class="s2">, y = </span><span class="si">%f</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">input_x</span><span class="p">,</span> <span class="n">input_y</span><span class="p">)</span>
+            <span class="n">rospy</span><span class="o">.</span><span class="n">set_param</span><span class="p">(</span><span class="s1">&#39;/des_pos_x&#39;</span><span class="p">,</span> <span class="n">input_x</span><span class="p">)</span>
+            <span class="n">rospy</span><span class="o">.</span><span class="n">set_param</span><span class="p">(</span><span class="s1">&#39;/des_pos_y&#39;</span><span class="p">,</span> <span class="n">input_y</span><span class="p">)</span>
+            <span class="n">goal_new</span><span class="o">.</span><span class="n">target_pose</span><span class="o">.</span><span class="n">pose</span><span class="o">.</span><span class="n">position</span><span class="o">.</span><span class="n">x</span> <span class="o">=</span> <span class="n">input_x</span>
+            <span class="n">goal_new</span><span class="o">.</span><span class="n">target_pose</span><span class="o">.</span><span class="n">pose</span><span class="o">.</span><span class="n">position</span><span class="o">.</span><span class="n">y</span> <span class="o">=</span> <span class="n">input_y</span>
+
+            <span class="c1"># send new goal to the action server</span>
+            <span class="n">action_client</span><span class="o">.</span><span class="n">send_goal</span><span class="p">(</span><span class="n">goal_new</span><span class="p">)</span>
+            <span class="n">have_goal</span> <span class="o">=</span> <span class="mi">1</span>
+    <span class="k">elif</span> <span class="n">input_command</span> <span class="o">==</span> <span class="s1">&#39;q&#39;</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">have_goal</span><span class="p">:</span>
+            <span class="c1"># cancel the goal</span>
+            <span class="n">have_goal</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="n">action_client</span><span class="o">.</span><span class="n">cancel_goal</span><span class="p">()</span>
+            <span class="n">rospy</span><span class="o">.</span><span class="n">loginfo</span><span class="p">(</span><span class="s2">&quot;Goal canceled&quot;</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="ow">not</span> <span class="n">have_goal</span><span class="p">:</span>
+            <span class="n">rospy</span><span class="o">.</span><span class="n">loginfo</span><span class="p">(</span><span class="s2">&quot;No goal to cancel&quot;</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">rospy</span><span class="o">.</span><span class="n">loginfo</span><span class="p">(</span><span class="s2">&quot;Invalid command&quot;</span><span class="p">)</span></div>
+
+
+    
+
+<span class="k">def</span> <span class="nf">change_goal</span><span class="p">():</span>
+    <span class="n">rospy</span><span class="o">.</span><span class="n">loginfo</span><span class="p">(</span><span class="s2">&quot;Change goal&quot;</span><span class="p">)</span>
+
+<div class="viewcode-block" id="default">
+<a class="viewcode-back" href="../../index.html#scripts.DefineActionClient.default">[docs]</a>
+<span class="k">def</span> <span class="nf">default</span><span class="p">():</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot; Default status of the dictionary used to implement a switch-case structure in the *robot_status()* function. It corresponds to an error case.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">rospy</span><span class="o">.</span><span class="n">loginfo</span><span class="p">(</span><span class="s2">&quot;Default&quot;</span><span class="p">)</span></div>
+
+
+
+<span class="k">def</span> <span class="nf">switch_status</span><span class="p">(</span><span class="n">case</span><span class="p">):</span>
+    <span class="n">switch_dictionary</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="mi">0</span><span class="p">:</span> <span class="n">idle</span><span class="p">,</span>
+        <span class="mi">1</span><span class="p">:</span> <span class="n">going_to_goal</span><span class="p">,</span>
+        <span class="mi">2</span><span class="p">:</span> <span class="n">change_goal</span>
+    <span class="p">}</span>
+
+    <span class="c1"># call the function according to the case</span>
+    <span class="n">switch_dictionary</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">case</span><span class="p">,</span> <span class="n">default</span><span class="p">)()</span>
+
+
+<div class="viewcode-block" id="robot_status">
+<a class="viewcode-back" href="../../index.html#scripts.DefineActionClient.robot_status">[docs]</a>
+<span class="k">def</span> <span class="nf">robot_status</span><span class="p">():</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    This function controls every action performed by the primary robot.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">temp_status</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">rospy</span><span class="o">.</span><span class="n">loginfo</span><span class="p">(</span><span class="s2">&quot;Robot status is idle&quot;</span><span class="p">)</span>
+    
+    <span class="k">while</span> <span class="ow">not</span> <span class="n">rospy</span><span class="o">.</span><span class="n">is_shutdown</span><span class="p">():</span>
+        <span class="n">switch_status</span><span class="p">(</span><span class="n">temp_status</span><span class="p">)</span></div>
+
+
+<span class="k">def</span> <span class="nf">display_command</span><span class="p">():</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;--------------------------------</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;the Robot is going to the goal</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;choose one of the following options:</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;change goal: c</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;cancel goal: q</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;--------------------------------</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s1">&#39;__main__&#39;</span><span class="p">:</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="c1"># Initialize the node</span>
+        <span class="n">rospy</span><span class="o">.</span><span class="n">init_node</span><span class="p">(</span><span class="s1">&#39;DefineActionClient&#39;</span><span class="p">)</span>
+
+        <span class="c1"># log the initialization of the node</span>
+        <span class="n">rospy</span><span class="o">.</span><span class="n">loginfo</span><span class="p">(</span><span class="s2">&quot;Node initialized successfully&quot;</span><span class="p">)</span>
+
+        <span class="c1"># Initialize the publisher</span>
+        <span class="k">global</span> <span class="n">publisher</span>
+        <span class="n">publisher</span> <span class="o">=</span> <span class="n">rospy</span><span class="o">.</span><span class="n">Publisher</span><span class="p">(</span><span class="s2">&quot;/RobotPositionVelocity&quot;</span><span class="p">,</span> <span class="n">RobotPositionVelocity</span><span class="p">,</span> <span class="n">queue_size</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot; </span>
+<span class="sd">        The message publisher is responsible for generating the position and velocity of the robot along designated axes.</span>
+<span class="sd">	    &quot;&quot;&quot;</span>
+
+        <span class="c1"># Initialize the subscriber</span>
+        <span class="k">global</span> <span class="n">subscriber</span>
+        <span class="n">subscriber</span> <span class="o">=</span> <span class="n">rospy</span><span class="o">.</span><span class="n">Subscriber</span><span class="p">(</span><span class="s2">&quot;/odom&quot;</span><span class="p">,</span> <span class="n">Odometry</span><span class="p">,</span> <span class="n">publish_message</span><span class="p">)</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Odometry subscriber for the robot&#39;s position and velocity.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="c1"># Initialize the action client</span>
+        <span class="k">global</span> <span class="n">action_client</span>
+        <span class="n">action_client</span> <span class="o">=</span> <span class="n">actionlib</span><span class="o">.</span><span class="n">SimpleActionClient</span><span class="p">(</span><span class="s1">&#39;/reaching_goal&#39;</span><span class="p">,</span> <span class="n">rt1_a2_2023</span><span class="o">.</span><span class="n">msg</span><span class="o">.</span><span class="n">PlanningAction</span><span class="p">)</span>
+        <span class="n">action_client</span><span class="o">.</span><span class="n">wait_for_server</span><span class="p">()</span>
+        <span class="n">rospy</span><span class="o">.</span><span class="n">loginfo</span><span class="p">(</span><span class="s2">&quot;Action client initialized successfully&quot;</span><span class="p">)</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Action client initialing</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+    
+        <span class="c1"># Call the robot status function</span>
+        <span class="n">robot_status</span><span class="p">()</span>
+
+
+    
+    <span class="k">except</span> <span class="n">rospy</span><span class="o">.</span><span class="n">ROSInterruptException</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Program interrupted before completion&quot;</span><span class="p">,</span> <span class="n">file</span><span class="o">=</span><span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="p">)</span>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, Amirmahdi Matin.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

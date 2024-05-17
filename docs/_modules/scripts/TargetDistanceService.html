@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>scripts.TargetDistanceService &mdash; Research_Track1_Assignment2 1.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=19f00094" />
+      <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css?v=fd3f3429" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="../../_static/jquery.js?v=5d32c60e"></script>
+        <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script src="../../_static/documentation_options.js?v=f2a433a1"></script>
+        <script src="../../_static/doctools.js?v=9a2dae69"></script>
+        <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            Research_Track1_Assignment2
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <!-- Local TOC -->
+              <div class="local-toc"></div>
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">Research_Track1_Assignment2</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">scripts.TargetDistanceService</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for scripts.TargetDistanceService</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/bin/env python3</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">.. module:: TargetDistanceService</span>
+<span class="sd">   :platform: Unix</span>
+<span class="sd">   :synopsis: Node for calculating the relative position and velocity of the robot to its target in the RT1_Second_Assignment project.</span>
+
+<span class="sd">.. moduleauthor:: Your Name Here</span>
+
+<span class="sd">This module implements a ROS node that calculates the distance and average velocity of a robot relative to a specified target position. The node subscribes to both the robot&#39;s current position and velocity and a target position, and provides a service that computes the difference in position and average velocity.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="sd">import rospy</span>
+<span class="sd">from geometry_msgs.msg import Point, Pose, Twist</span>
+<span class="sd">from nav_msgs.msg import Odometry</span>
+<span class="sd">import actionlib</span>
+<span class="sd">import actionlib.msg</span>
+<span class="sd">import rt1_a2_2023.msg</span>
+<span class="sd">from rt1_a2_2023.msg import RobotPositionVelocity, TargetPosition</span>
+<span class="sd">from rt1_a2_2023.srv import LastTarget, LastTargetRequest</span>
+<span class="sd">from rt1_a2_2023.srv import Mean, MeanResponse</span>
+<span class="sd">import math</span>
+
+
+
+<span class="sd">rospy.wait_for_service(&#39;last_target&#39;)</span>
+<span class="sd">client = rospy.ServiceProxy(&#39;last_target&#39;, LastTarget)</span>
+
+<span class="sd"># Generate a LastTargetRequest, which is currently an empty request.</span>
+<span class="sd">request = LastTargetRequest()</span>
+
+<span class="sd">velocitys = list()</span>
+<span class="sd">global  distance</span>
+<span class="sd">global average_vel_x</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+
+
+<div class="viewcode-block" id="calc_avg">
+<a class="viewcode-back" href="../../index.html#scripts.TargetDistanceService.calc_avg">[docs]</a>
+<span class="k">def</span> <span class="nf">calc_avg</span><span class="p">(</span><span class="n">req</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Service callback function to calculate the average velocity and distance.</span>
+
+<span class="sd">    :param req: Service request, not used in this implementation.</span>
+<span class="sd">    :type req: MeanRequest</span>
+<span class="sd">    :return: The response containing the distance and average velocity.</span>
+<span class="sd">    :rtype: MeanResponse</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">res</span> <span class="o">=</span> <span class="n">MeanResponse</span><span class="p">()</span>
+    <span class="n">res</span><span class="o">.</span><span class="n">dist</span> <span class="o">=</span> <span class="n">distance</span>
+    <span class="n">res</span><span class="o">.</span><span class="n">velocity_mean</span> <span class="o">=</span> <span class="n">average_vel_x</span>
+
+    <span class="k">return</span> <span class="n">res</span></div>
+
+
+<div class="viewcode-block" id="get_avg">
+<a class="viewcode-back" href="../../index.html#scripts.TargetDistanceService.get_avg">[docs]</a>
+<span class="k">def</span> <span class="nf">get_avg</span><span class="p">(</span><span class="n">msg</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Subscriber callback function to update distance and average velocity.</span>
+
+<span class="sd">    :param msg: The current position and velocity of the robot.</span>
+<span class="sd">    :type msg: RobotPositionVelocity</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">global</span> <span class="n">response</span><span class="p">,</span> <span class="n">velocitys</span>
+
+    <span class="n">response</span> <span class="o">=</span> <span class="n">client</span><span class="p">(</span><span class="n">request</span><span class="p">)</span>
+    <span class="n">target_x</span> <span class="o">=</span> <span class="n">response</span><span class="o">.</span><span class="n">x</span>
+    <span class="n">target_y</span> <span class="o">=</span> <span class="n">response</span><span class="o">.</span><span class="n">y</span>
+
+    <span class="n">window</span> <span class="o">=</span> <span class="n">rospy</span><span class="o">.</span><span class="n">get_param</span><span class="p">(</span><span class="s1">&#39;avg_window&#39;</span><span class="p">)</span>
+    <span class="n">x_now</span> <span class="o">=</span> <span class="n">msg</span><span class="o">.</span><span class="n">x</span>
+    <span class="n">y_now</span> <span class="o">=</span> <span class="n">msg</span><span class="o">.</span><span class="n">y</span>
+
+    <span class="n">vel_x_now</span> <span class="o">=</span> <span class="n">msg</span><span class="o">.</span><span class="n">v_x</span>
+
+    <span class="n">distance</span> <span class="o">=</span> <span class="n">math</span><span class="o">.</span><span class="n">sqrt</span><span class="p">((</span><span class="n">target_x</span> <span class="o">-</span> <span class="n">x_now</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="p">(</span><span class="n">target_y</span> <span class="o">-</span> <span class="n">y_now</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
+    <span class="n">velocitys</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">msg</span><span class="o">.</span><span class="n">v_x</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">velocitys</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">window</span><span class="p">):</span>
+        <span class="n">average_vel_x</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">velocitys</span><span class="p">)</span> <span class="o">/</span> <span class="nb">len</span><span class="p">(</span><span class="n">velocitys</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">average_vel_x</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">velocitys</span><span class="p">[</span><span class="o">-</span><span class="n">window</span><span class="p">:])</span> <span class="o">/</span> <span class="n">window</span></div>
+
+
+<div class="viewcode-block" id="main">
+<a class="viewcode-back" href="../../index.html#scripts.TargetDistanceService.main">[docs]</a>
+<span class="k">def</span> <span class="nf">main</span><span class="p">():</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Main function to initialize the ROS node and its subscriptions and services.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">rospy</span><span class="o">.</span><span class="n">init_node</span><span class="p">(</span><span class="s1">&#39;RobotToTarget&#39;</span><span class="p">)</span>
+    <span class="n">rospy</span><span class="o">.</span><span class="n">loginfo</span><span class="p">(</span><span class="s2">&quot;Node operational and prepared to compute the mean&quot;</span><span class="p">)</span>
+
+    <span class="n">rospy</span><span class="o">.</span><span class="n">Service</span><span class="p">(</span><span class="s1">&#39;mean&#39;</span><span class="p">,</span> <span class="n">Mean</span><span class="p">,</span> <span class="n">calc_avg</span><span class="p">)</span>
+    <span class="n">rospy</span><span class="o">.</span><span class="n">Subscriber</span><span class="p">(</span><span class="s2">&quot;/kinematics&quot;</span><span class="p">,</span> <span class="n">RobotPositionVelocity</span><span class="p">,</span> <span class="n">get_avg</span><span class="p">)</span>
+
+    <span class="n">rospy</span><span class="o">.</span><span class="n">spin</span><span class="p">()</span></div>
+
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">main</span><span class="p">()</span>
+    <span class="k">except</span> <span class="n">rospy</span><span class="o">.</span><span class="n">ROSInterruptException</span><span class="p">:</span>
+        <span class="k">pass</span>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, Amirmahdi Matin.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
