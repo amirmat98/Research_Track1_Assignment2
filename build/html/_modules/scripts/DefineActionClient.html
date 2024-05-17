@@ -95,7 +95,21 @@
 <span class="sd">   /reaching_goal -&gt; employed to establish communication with the &quot;bug_as&quot; action server.</span>
 <span class="sd">&quot;&quot;&quot;</span>
 
-
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">import rospy</span>
+<span class="sd">from geometry_msgs.msg import Point, Pose, Twist</span>
+<span class="sd">from nav_msgs.msg import Odometry</span>
+<span class="sd">import actionlib</span>
+<span class="sd">import actionlib.msg</span>
+<span class="sd">from rt1_a2_2023.msg import PlanningAction, PlanningGoal</span>
+<span class="sd">from rt1_a2_2023.msg import TargetPosition, Abort, RobotPositionVelocity</span>
+<span class="sd">import timgeometry_msgs.e</span>
+<span class="sd">import sys</span>
+<span class="sd">import select</span>
+<span class="sd">import os</span>
+<span class="sd">from std_srvs.srv import *</span>
+<span class="sd">from rt1_a2_2023.srv import LastTarget, RobotToTarget</span>
+<span class="sd">&quot;&quot;&quot;</span>
 
 
 <span class="c1"># global variables</span>

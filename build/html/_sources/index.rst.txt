@@ -25,6 +25,16 @@ Research_Track1_Assignment2 documentation!
 This is the documentation of the Research_Track1_Assignment2 package!
 
 DefineActionClient
-====================
+======================
 .. automodule:: scripts.DefineActionClient
+   :members:
+
+TargetPositionService
+======================
+.. automodule:: scripts.TargetPositionService
+   :members:
+
+TargetDistanceService
+======================
+.. automodule:: scripts.TargetDistanceService
    :members:
