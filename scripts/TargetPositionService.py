@@ -9,11 +9,10 @@
 The last known target position received by the robot is returned via a service provided by a ROS node implemented in this module. The last position received by the node, which is maintained and queried via a ROS service, is subscribed to for target position updates.
 """
 
-"""
 import rospy
 from rt1_a2_2023.msg import TargetPosition
 from rt1_a2_2023.srv import LastTarget, LastTargetResponse
-"""
+
 
 PreviousTarget = None
 

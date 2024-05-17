@@ -24,7 +24,7 @@ Action client topic:
    /reaching_goal -> employed to establish communication with the "bug_as" action server.
 """
 
-"""
+
 import rospy
 from geometry_msgs.msg import Point, Pose, Twist
 from nav_msgs.msg import Odometry
@@ -38,7 +38,7 @@ import select
 import os
 from std_srvs.srv import *
 from rt1_a2_2023.srv import LastTarget, RobotToTarget
-"""
+
 
 
 # global variables

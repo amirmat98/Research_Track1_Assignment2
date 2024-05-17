@@ -10,7 +10,6 @@
 This module implements a ROS node that calculates the distance and average velocity of a robot relative to a specified target position. The node subscribes to both the robot's current position and velocity and a target position, and provides a service that computes the difference in position and average velocity.
 """
 
-"""
 
 import rospy
 from geometry_msgs.msg import Point, Pose, Twist
@@ -35,7 +34,6 @@ velocitys = list()
 global  distance
 global average_vel_x
 
-"""
 
 
 def calc_avg(req):
