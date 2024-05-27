@@ -199,7 +199,7 @@ if __name__ == '__main__':
         """
     
         # Call the robot status function
-        robot_status()
+        # robot_status()
 
 
     
