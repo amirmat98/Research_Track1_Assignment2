@@ -17,6 +17,7 @@ Student: [AmirMahdi Matin](https://github.com/amirmat98 "AmirMahdi Matin")  - 58
     - [First Node](#First-Node-(DefineTargetService))
     - [Second Node](#Second-Node-(TargetPositionService))
     - [Third Node](#Third-Node-(TargetDistanceService))
+- [Jupyter Notebook](#Jupyter-Notebook)
 - [Further improvements](#Further-improvements)
 
 
@@ -165,6 +166,14 @@ Main function
     - Subscribers may be set up to receive messages including the position-velocity of the robot and the target location.
     - Make a ROS service that can respond to queries for the robot's distance from a target.
     - Keep waiting for anything to happen, like an operating system signal or a ROS message.
+
+## Jupyter Notebook
+The addition of a Jupyter Notebook file allows for the simulation of node_a through the use of Jupyter Notebook. The modifications that have been made to this code include the addition of widgets that allow the user to provide the target X and Y, as well as buttons that allow the user to provide new targets or cancel the target that is now being used. The user interface of the code is improved as a result of these settings. Live plots, which display the number of objectives that have been reached and those that have been cancelled, have also been introduced to the code in order to improve the visual comprehension of the code. In addition, the live position of the robot may be observed on a separate plot simultaneously. In the event that you discover that you need to utilize the code from the Jupyter Notebook for node_a, the launch file will require some adjustments.
+To begin, remove the lines in the launch file that are required for the execution of node_a, node_b, and node_c.
+The launch file should be executed by use the command `roslaunch your_package_name assignment1.launch`.
+3. Execute the data from the Jupyter notebook.
+4. You must first input X and Y targets in accordance with the instructions provided by the code, and then you must press the change button in order to proceed with the aim.
+
 
 ## Further improvements
 There are a few ways that this project may be enhanced.
