@@ -109,6 +109,7 @@ def going_to_goal():
             rospy.loginfo("New goal is: x = %f, y = %f", input_x, input_y)
             rospy.set_param('/des_pos_x', input_x)
             rospy.set_param('/des_pos_y', input_y)
+            goal_new = rt1_a2_2023.msg.PlanningGoal()
             goal_new.target_pose.pose.position.x = input_x
             goal_new.target_pose.pose.position.y = input_y
 
